@@ -3,19 +3,11 @@
 #include <string>
 #include <iostream>
 #include "./chat_structs.cpp"
-#include "./json.hpp"
 
-using json = nlohmann::json;
+// headers para sockets
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
-std::string json2string(json j) {
-    std::string s = j.dump();
-    return s;
-}
-
-json string2json(std::string s) {
-    json j = json::parse(s);
-    return j;
-}
 
 int menuOptions()
 {
@@ -33,26 +25,24 @@ int menuOptions()
     return option;
 }
 
-// gcc -o client client.cpp -std=c++11 -lstdc++
-
 int main(int argc, char *argv[])
 {
 
-    //    if (argc != 5){
-    //        return 1;
-    //    }
-    //
-    //    // nombre del cliente
-    //    char *clientName = argv[1];
-    //
-    //    // nombre de usuario
-    //    char *userName = argv[2];
-    //
-    //    // ip del servidor
-    //    char *serverIP = argv[3];
-    //
-    //    // puerto del servidor
-    //    int serverPort = atoi(argv[4]);
+       if (argc != 5){
+           return 1;
+       }
+    
+       // nombre del cliente
+       char *clientName = argv[1];
+    
+       // nombre de usuario
+       char *userName = argv[2];
+    
+       // ip del servidor
+       char *serverIP = argv[3];
+    
+       // puerto del servidor
+       int serverPort = atoi(argv[4]);
 
     std::string jsonTest = R"({"type":"login","userName":"user1","password":"pass1"})";
 
