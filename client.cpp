@@ -2,9 +2,8 @@
 #include <cstdio>
 #include <string>
 #include <iostream>
-#include "./chat_structs.cpp"
+#include "./client_responses.cpp"
 #include "./async-sockets/tcpsocket.hpp"
-
 
 int menuOptions()
 {
@@ -22,42 +21,68 @@ int menuOptions()
     return option;
 }
 
-void onClientMessageReceived(std::string message, TCPSocket socket){
-    try {
+void onClientMessageReceived(std::string message, TCPSocket socket)
+{
+    try
+    {
+        std::list<std::string> jsonList = splitjsons(message);
 
-        printf("Mensaje recibido: %s\n", message.c_str());
-        json data = string2json(message);
+        for (std::list<std::string>::iterator it = jsonList.begin(); it != jsonList.end(); ++it)
+        {
 
-        std::string type = data["request"];
-        json code = data["code"];
+            std::string jsonString = *it;
 
-        if (type == "INIT_CONEX"){
+            json data = string2json(jsonString);
 
-            if (code == 200){
-                printf("Conexion al chat aceptada...\n");
-            }else if (code == 101){
+            std::string type = data["response"];
+            json code = data["code"];
+
+            if (type == "INIT_CONEX")
+            {
+
+                if (code == 200)
+                {
+
+                    json request_chats;
+                    request_chats["request"] = "GET_CHAT";
+                    request_chats["body"] = "all";
+                    socket.Send(json2string(request_chats));
+
+                }
+                else if (code == 101)
+                {
+                    socket.Close();
+                    printf("Conexion al chat rechazada...\n");
+                    exit(0);
+                }
+            }
+            else if (type == "END_CONEX")
+            {
+                printf("Conexion al chat terminada...\n");
                 socket.Close();
-                printf("Conexion al chat rechazada...\n");
                 exit(0);
             }
-
-        }else if (type == "END_CONEX"){
-            printf("Conexion al chat terminada...\n");
-            socket.Close();
-            exit(0);
-        }else if (type == "GET_CHAT"){
-            
-        }else if (type == "POST_CHAT"){
-            
-        }else if (type == "GET_USER"){
-            
-        }else if (type == "PUT_STATUS"){
-            
-        }else if (type == "NEW_MESSAGE"){
-            
+            else if (type == "GET_CHAT")
+            {
+                printf(message.c_str());
+            }
+            else if (type == "POST_CHAT")
+            {
+            }
+            else if (type == "GET_USER")
+            {
+                printf(message.c_str());
+            }
+            else if (type == "PUT_STATUS")
+            {
+            }
+            else if (type == "NEW_MESSAGE")
+            {
+            }
         }
-
-    }catch(std::exception& e){
+    }
+    catch (std::exception &e)
+    {
         std::cout << "Exception: " << e.what() << "\n";
     }
 }
@@ -83,20 +108,23 @@ int main(int argc, char *argv[])
     // puerto del servidor
     int serverPort = atoi(argv[3]);
 
-  
-    TCPSocket tcpSocket([](int errorCode, std::string errorMessage){
-        std::cout << "Socket creation error:" << errorCode << " : " << errorMessage << std::endl;
-    });
+    TCPSocket tcpSocket([](int errorCode, std::string errorMessage)
+                        { std::cout << "Socket creation error:" << errorCode << " : " << errorMessage << std::endl; });
 
-    tcpSocket.onMessageReceived = [&](std::string message) {
+    tcpSocket.onMessageReceived = [&](std::string message)
+    {
         onClientMessageReceived(message, tcpSocket);
     };
 
-    tcpSocket.onSocketClosed = [](int errorCode){
-        std::cout << "Connection closed: " << errorCode << std::endl;
+    tcpSocket.onSocketClosed = [](int errorCode)
+    {
+        std::cout << "\n\nConnection closed: " << errorCode << std::endl;
+        exit(0);
     };
 
-    tcpSocket.Connect(serverIP, serverPort, [&] {
+    tcpSocket.Connect(
+        serverIP, serverPort, [&]
+        {
         json body;
         body["user_id"] = std::string(userName);
         body["connect_time"] = std::to_string(time(NULL));
@@ -106,11 +134,11 @@ int main(int argc, char *argv[])
         connection["body"] = body;
 
         // Send String:
-        tcpSocket.Send(json2string(connection));
-    },
-    [](int errorCode, std::string errorMessage){
-        printf("Error: %s\n", errorMessage.c_str());
-    });
+        tcpSocket.Send(json2string(connection)); },
+        [](int errorCode, std::string errorMessage)
+        {
+            printf("Error: %s\n", errorMessage.c_str());
+        });
 
     bool running = true;
 
@@ -121,18 +149,18 @@ int main(int argc, char *argv[])
 
         if (option == 2)
         {
-           
-            // message with userName
-            std::string message = "{\"message\":\"" + std::string(userName) + "\"}";
-            tcpSocket.Send(message);
 
+            // message with userName
+            json request_chats;
+            request_chats["request"] = "GET_CHAT";
+            request_chats["body"] = "all";
+            tcpSocket.Send(json2string(request_chats));
         }
         else if (option == 7)
         {
             json request;
             request["request"] = "END_CONEX";
             tcpSocket.Send(json2string(request));
-            running = false;
         }
     }
 

@@ -4,12 +4,13 @@
 #include "./async-sockets/tcpsocket.hpp"
 #include <ctime>
 
+
 using json = nlohmann::json;
 
 struct connection_info {
-    std::string userName;
-    int status;
-    TCPSocket *socket;
+    std::string userName = "";
+    int status = -1;
+    TCPSocket *socket = NULL;
 };
 
 struct chat_message {
@@ -49,5 +50,7 @@ std::string getTimeString(){
 	
 	return std::string(date_string) + " " + std::string(time_string);
 }
+
+
 
 

@@ -5,14 +5,13 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "./chat_structs.cpp"
 #include "./async-sockets/tcpserver.hpp"
-
-#define MAX_CONNECTIONS 10
+#include "./server_responses.cpp"
 
 connection_info conections[MAX_CONNECTIONS];
 
-chat_message *messages = new chat_message[0];
+// chat_message *messages = new chat_message[0];
+std::list<chat_message> messages;
 
 int addConnection(std::string userName, TCPSocket *socket)
 {
@@ -53,12 +52,21 @@ int removeConnection(std::string remoteAddres, int remotePort)
 {
     for (int i = 0; i < MAX_CONNECTIONS; i++)
     {
-        if (conections[i].socket->remoteAddress() == remoteAddres && conections[i].socket->remotePort() == remotePort)
+
+        TCPSocket *socket = conections[i].socket;
+
+        if (socket != NULL)
         {
-            conections[i].userName = "";
-            conections[i].status = -1;
-            conections[i].socket = NULL;
-            return 0;
+            std::string remoteAddresSocket = socket->remoteAddress();
+            int remotePortSocket = socket->remotePort();
+
+            if (remoteAddres == remoteAddresSocket && remotePort == remotePortSocket)
+            {
+                conections[i].userName = "";
+                conections[i].status = -1;
+                conections[i].socket = NULL;
+                return 0;
+            }
         }
     }
     return -1;
@@ -77,245 +85,179 @@ void addMessageGlobal(json data)
     message_var.delivered_at = delivered_at;
     message_var.to = to;
 
-    chat_message temp[sizeof(messages) + 1];
+    messages.push_back(message_var);
+}
 
-    for (int i = 0; i < sizeof(messages); i++)
+void emitBroadcast(json data)
+{
+    for (int i = 0; i < MAX_CONNECTIONS; i++)
     {
-        temp[i] = messages[i];
+        TCPSocket *socket = conections[i].socket;
+
+        if (socket != NULL)
+        {   
+            socket->Send(json2string(data));
+        }
     }
-    temp[sizeof(messages)] = message_var;
-    messages = temp;
 }
 
 void onClientMessageReceived(std::string message, TCPSocket *newClient)
 {
     try
     {
-        printf("Mensaje recibido: %s\n", message.c_str());
-        json data = string2json(message);
 
-        std::string type = data["request"];
-        json body = data["body"];
+        std::list<std::string> jsonList = splitjsons(message);
 
-        if (type == "INIT_CONEX")
+        for (std::list<std::string>::iterator it = jsonList.begin(); it != jsonList.end(); ++it)
         {
-            std::string userName = body["user_id"];
-            int rP = newClient->remotePort();
-            std::string remotePort = std::to_string(rP);
+            std::string jsonString = *it;
+            printf("%s:%d -> %s\n", newClient->remoteAddress().c_str(), newClient->remotePort(), jsonString.c_str());
 
-            int addConnectionResult = addConnection(userName, newClient);
+            json data = string2json(jsonString);
 
-            json response;
-            response["response"] = "INIT_CONEX";
+            std::string type = data["request"];
+            json body = data["body"];
 
-            if (addConnectionResult != 0)
+            if (type == "INIT_CONEX")
             {
-                response["code"] = 101;
-            }
-            else
-            {
-                printf("Conexion aceptada de: %s %s:%s\n", userName.c_str(), newClient->remoteAddress().c_str(), remotePort.c_str());
-                response["code"] = 200;
-            }
-            newClient->Send(json2string(response));
-        }
-        else if (type == "END_CONEX")
-        {
-            int r = removeConnection(newClient->remoteAddress(), newClient->remotePort());
+                std::string userName = body["user_id"];
+                int rP = newClient->remotePort();
+                std::string remotePort = std::to_string(rP);
 
-            json response;
-            response["response"] = "END_CONEX";
-
-            if (r == 0)
-            {
-                response["code"] = 200;
-            }
-            else
-            {
-                response["code"] = 105;
-            }
-
-            newClient->Send(json2string(response));
-        }
-        else if (type == "GET_CHAT")
-        {
-            if (body == "all")
-            {
-                json body[sizeof(messages)];
-
-                for (int i = 0; i < sizeof(messages); i++)
-                {
-                    body[i]["message"] = messages[i].message;
-                    body[i]["from"] = messages[i].from;
-                    body[i]["delivered_at"] = messages[i].delivered_at;
-                    body[i]["to"] = messages[i].to;
-                }
+                int addConnectionResult = addConnection(userName, newClient);
 
                 json response;
-                response["response"] = "GET_CHAT";
-                response["code"] = 200;
-                response["body"] = body;
+                response["response"] = "INIT_CONEX";
 
-                newClient->Send(json2string(response));
-            }
-            else
-            {
-                std::string userName = body;
-
-                json *body = new json[0];
-
-                for (int i = 0; i < sizeof(messages); i++)
+                if (addConnectionResult != 0)
                 {
-                    if (messages[i].to == userName)
-                    {
-                        json message;
-                        message["message"] = messages[i].message;
-                        message["from"] = messages[i].from;
-                        message["delivered_at"] = messages[i].delivered_at;
-                        message["to"] = messages[i].to;
-
-                        json temp[sizeof(body) + 1];
-                        for (int j = 0; j < sizeof(body); j++)
-                        {
-                            temp[j] = body[j];
-                        }
-                        temp[sizeof(body)] = message;
-                        body = temp;
-                    }
-                }
-
-                json response;
-                response["response"] = "GET_CHAT";
-                response["code"] = 200;
-
-                json bodyjson[sizeof(body)];
-
-                for (int i = 0; i < sizeof(body); i++)
-                {
-                    bodyjson[i]["message"] = body[i]["message"];
-                    bodyjson[i]["from"] = body[i]["from"];
-                    bodyjson[i]["delivered_at"] = body[i]["delivered_at"];
-                    bodyjson[i]["to"] = body[i]["to"];
-                }
-
-                response["body"] = bodyjson;
-
-                newClient->Send(json2string(response));
-            }
-        }
-        else if (type == "POST_CHAT")
-        {
-            addMessageGlobal(body);
-
-            json response;
-            response["response"] = "POST_CHAT";
-            response["code"] = 200;
-
-            newClient->Send(json2string(response));
-
-            json response_to_all;
-            response_to_all["response"] = "NEW_MESSAGE";
-            response_to_all["body"] = body;
-
-            for (int i = 0; i < MAX_CONNECTIONS; i++)
-            {
-                if (conections[i].socket != NULL && conections[i].status > 0)
-                {
-                    conections[i].socket->Send(json2string(response_to_all));
-                }
-            }
-        }
-        else if (type == "GET_USER")
-        {
-            if (body == "all")
-            {
-                json *body = new json[0];
-
-                for (int i = 0; i < MAX_CONNECTIONS; i++)
-                {
-                    if (conections[i].status == 0)
-                    {
-                        json temp[sizeof(body) + 1];
-
-                        for (int j = 0; j < sizeof(body); j++)
-                        {
-                            temp[j] = body[j];
-                        }
-                        temp[sizeof(body)] = conections[i].userName;
-                        body = temp;
-                    }
-                }
-
-                json response;
-                response["response"] = "GET_USER";
-                response["code"] = 200;
-
-                json bodyjson[sizeof(body)];
-
-                for (int i = 0; i < sizeof(body); i++)
-                {
-                    bodyjson[i]["message"] = body[i]["message"];
-                    bodyjson[i]["from"] = body[i]["from"];
-                    bodyjson[i]["delivered_at"] = body[i]["delivered_at"];
-                    bodyjson[i]["to"] = body[i]["to"];
-                }
-
-                response["body"] = bodyjson;
-
-                newClient->Send(json2string(response));
-            }
-            else
-            {
-                std::string userName = body;
-
-                std::string ip = "";
-
-                for (int i = 0; i < MAX_CONNECTIONS; i++)
-                {
-                    if (conections[i].userName == userName)
-                    {
-                        ip = conections[i].socket->remoteAddress();
-                    }
-                }
-
-                json response;
-                response["response"] = "GET_USER";
-
-                if (ip == "")
-                {
-                    response["code"] = 102;
+                    response["code"] = 101;
                 }
                 else
                 {
                     response["code"] = 200;
-                    response["body"] = ip;
+                }
+                newClient->Send(json2string(response));
+
+                json users_string = get_users_connected(conections);
+                emitBroadcast(users_string);
+            }
+            else if (type == "END_CONEX")
+            {
+                int r = removeConnection(newClient->remoteAddress(), newClient->remotePort());
+
+                json response;
+                response["response"] = "END_CONEX";
+
+                if (r == 0)
+                {
+                    response["code"] = 200;
+                }
+                else
+                {
+                    response["code"] = 105;
+                }
+                newClient->Send(json2string(response));
+
+                json users_string = get_users_connected(conections);
+                emitBroadcast(users_string);
+            }
+            else if (type == "GET_CHAT")
+            {
+                if (body == "all")
+                {
+                    json response = get_chats_all(messages);
+                    newClient->Send(json2string(response));
+                }
+                else
+                {
+                    std::string userName = body;
+                    json response = get_chats_user(messages, userName);
+                    newClient->Send(json2string(response));
                 }
             }
-        }
-        else if (type == "PUT_STATUS")
-        {
-            int status = body;
-
-            for (int i = 0; i < MAX_CONNECTIONS; i++)
+            else if (type == "POST_CHAT")
             {
-                if (conections[i].socket->remoteAddress() == newClient->remoteAddress() && conections[i].socket->remotePort() == newClient->remotePort())
+                addMessageGlobal(body);
+
+                json response;
+                response["response"] = "POST_CHAT";
+                response["code"] = 200;
+
+                newClient->Send(json2string(response));
+
+                json response_to_all;
+                response_to_all["response"] = "NEW_MESSAGE";
+                response_to_all["body"] = body;
+
+                for (int i = 0; i < MAX_CONNECTIONS; i++)
                 {
-                    conections[i].status = status;
+                    if (conections[i].socket != NULL && conections[i].status > 0)
+                    {
+                        conections[i].socket->Send(json2string(response_to_all));
+                    }
+                }
+            }
+            else if (type == "GET_USER")
+            {
+                if (body == "all")
+                {
+                    json response = get_users_connected(conections);
+                    newClient->Send(json2string(response));
+                }
+                else
+                {
+                    std::string userName = body;
+
+                    std::string ip = "";
+
+                    for (int i = 0; i < MAX_CONNECTIONS; i++)
+                    {
+                        if (conections[i].userName == userName)
+                        {
+                            ip = conections[i].socket->remoteAddress();
+                        }
+                    }
 
                     json response;
-                    response["response"] = "PUT_STATUS";
-                    response["code"] = 200;
+                    response["response"] = "GET_USER";
 
-                    newClient->Send(json2string(response));
-                    break;
+                    if (ip == "")
+                    {
+                        response["code"] = 102;
+                    }
+                    else
+                    {
+                        response["code"] = 200;
+                        response["body"] = ip;
+                    }
                 }
             }
+            else if (type == "PUT_STATUS")
+            {
+                int status = body;
 
-            json response;
-            response["response"] = "PUT_STATUS";
-            response["code"] = 104;
+                for (int i = 0; i < MAX_CONNECTIONS; i++)
+                {
+                    if (conections[i].socket->remoteAddress() == newClient->remoteAddress() && conections[i].socket->remotePort() == newClient->remotePort())
+                    {
+                        conections[i].status = status;
 
-            newClient->Send(json2string(response));
+                        json response;
+                        response["response"] = "PUT_STATUS";
+                        response["code"] = 200;
+
+                        newClient->Send(json2string(response));
+                        break;
+                    }
+                }
+
+                json response;
+                response["response"] = "PUT_STATUS";
+                response["code"] = 104;
+
+                newClient->Send(json2string(response));
+            }
         }
     }
     catch (std::exception &e)
@@ -353,6 +295,8 @@ int main(int argc, char *argv[])
         newClient->onSocketClosed = [newClient](int errorCode)
         {
             removeConnection(newClient->remoteAddress(), newClient->remotePort());
+            json users_string = get_users_connected(conections);
+            emitBroadcast(users_string);
             printf("Client %s:%d disconnected.\n", newClient->remoteAddress().c_str(), newClient->remotePort());
         };
     };
