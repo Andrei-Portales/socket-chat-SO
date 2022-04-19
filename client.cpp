@@ -22,6 +22,46 @@ int menuOptions()
     return option;
 }
 
+void onClientMessageReceived(std::string message, TCPSocket socket){
+    try {
+
+        printf("Mensaje recibido: %s\n", message.c_str());
+        json data = string2json(message);
+
+        std::string type = data["request"];
+        json code = data["code"];
+
+        if (type == "INIT_CONEX"){
+
+            if (code == 200){
+                printf("Conexion al chat aceptada...\n");
+            }else if (code == 101){
+                socket.Close();
+                printf("Conexion al chat rechazada...\n");
+                exit(0);
+            }
+
+        }else if (type == "END_CONEX"){
+            printf("Conexion al chat terminada...\n");
+            socket.Close();
+            exit(0);
+        }else if (type == "GET_CHAT"){
+            
+        }else if (type == "POST_CHAT"){
+            
+        }else if (type == "GET_USER"){
+            
+        }else if (type == "PUT_STATUS"){
+            
+        }else if (type == "NEW_MESSAGE"){
+            
+        }
+
+    }catch(std::exception& e){
+        std::cout << "Exception: " << e.what() << "\n";
+    }
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -48,8 +88,8 @@ int main(int argc, char *argv[])
         std::cout << "Socket creation error:" << errorCode << " : " << errorMessage << std::endl;
     });
 
-    tcpSocket.onMessageReceived = [](std::string message) {
-        printf("Mensaje recibido: %s\n", message.c_str());
+    tcpSocket.onMessageReceived = [&](std::string message) {
+        onClientMessageReceived(message, tcpSocket);
     };
 
     tcpSocket.onSocketClosed = [](int errorCode){
@@ -59,7 +99,7 @@ int main(int argc, char *argv[])
     tcpSocket.Connect(serverIP, serverPort, [&] {
         json body;
         body["user_id"] = std::string(userName);
-        body["connect_time"] = "" + std::to_string(time(NULL));
+        body["connect_time"] = std::to_string(time(NULL));
 
         json connection;
         connection["request"] = "INIT_CONEX";
@@ -89,6 +129,9 @@ int main(int argc, char *argv[])
         }
         else if (option == 7)
         {
+            json request;
+            request["request"] = "END_CONEX";
+            tcpSocket.Send(json2string(request));
             running = false;
         }
     }
