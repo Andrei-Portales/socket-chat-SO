@@ -190,13 +190,7 @@ void onClientMessageReceived(std::string message, TCPSocket *newClient)
                 response_to_all["response"] = "NEW_MESSAGE";
                 response_to_all["body"] = body;
 
-                for (int i = 0; i < MAX_CONNECTIONS; i++)
-                {
-                    if (conections[i].socket != NULL && conections[i].status > 0)
-                    {
-                        conections[i].socket->Send(json2string(response_to_all));
-                    }
-                }
+                emitBroadcast(response_to_all);
             }
             else if (type == "GET_USER")
             {

@@ -5,23 +5,15 @@
 #include "./client_responses.cpp"
 #include "./async-sockets/tcpsocket.hpp"
 
-int menuOptions()
-{
-    printf("1. Chatear con todos los usuarios (broadcasting).\n");
-    printf("2. Enviar y recibir mensajes directos, privados, aparte del chat general.\n");
-    printf("3. Cambiar de status.\n");
-    printf("4. Listar los usuarios conectados al sistema de chat.\n");
-    printf("5. Desplegar información de un usuario en particular.\n");
-    printf("6. Ayuda.\n");
-    printf("7. Salir.\n");
-    printf("\n");
-    printf("Ingrese una opción: ");
-    int option;
-    scanf("%d", &option);
-    return option;
-}
+// qt interface
+#include <QApplication>
+#include <QPushButton>
+#include <QMessageBox>
+#include "./gui/mainwindow.h"
 
-void onClientMessageReceived(std::string message, TCPSocket socket)
+std::list<chat_message> messages;
+
+void onClientMessageReceived(std::string message, TCPSocket socket,  Ui::ChatWindow ui)
 {
     try
     {
@@ -48,36 +40,71 @@ void onClientMessageReceived(std::string message, TCPSocket socket)
                     request_chats["body"] = "all";
                     socket.Send(json2string(request_chats));
 
+                    ui.pages->setCurrentIndex(2);
                 }
                 else if (code == 101)
                 {
-                    socket.Close();
                     printf("Conexion al chat rechazada...\n");
-                    exit(0);
+                    QMessageBox::information(nullptr, "Error", "Debe llenar todos los campos");
+                    socket.Close();
                 }
             }
             else if (type == "END_CONEX")
             {
                 printf("Conexion al chat terminada...\n");
+                ui.pages->setCurrentIndex(0);
+                printf("setcurrentindex: 0\n");
+
                 socket.Close();
-                exit(0);
             }
             else if (type == "GET_CHAT")
             {
-                printf(message.c_str());
+
+                json body = data["body"];
+
+                messages.clear();
+
+                for (int i = 0; i < body.size(); i++)
+                {
+                    json message = body[i];
+
+                    std::string message_string = message["message"];
+                    std::string from = message["from"];
+                    std::string delivered_at = message["delivered_at"];
+                    std::string to = message["to"];
+
+                    chat_message chat_message;
+                    chat_message.message = message_string;
+                    chat_message.from = from;
+                    chat_message.delivered_at = delivered_at;
+                    chat_message.to = to;
+
+                    messages.push_back(chat_message);
+                }
             }
             else if (type == "POST_CHAT")
             {
+                if (code == 200){
+                  
+                }
             }
             else if (type == "GET_USER")
             {
-                printf(message.c_str());
             }
             else if (type == "PUT_STATUS")
             {
             }
             else if (type == "NEW_MESSAGE")
             {
+                json body = data["body"];
+
+                chat_message message;
+                message.message = body["message"];
+                message.from = body["from"];
+                message.delivered_at = body["delivered_at"];
+                message.to = body["to"];
+
+                messages.push_back(message);
             }
         }
     }
@@ -89,82 +116,74 @@ void onClientMessageReceived(std::string message, TCPSocket socket)
 
 int main(int argc, char *argv[])
 {
+    QApplication a(argc, argv);
 
-    if (argc != 4)
-    {
-        printf("Error: Cantidad de argumentos incorrecta.\n");
-        return -1;
-    }
+    QMainWindow w;
 
-    // nombre del cliente
-    char *clientName = argv[0];
+    Ui::ChatWindow ui;
 
-    // nombre de usuario
-    char *userName = argv[1];
+    ui.setupUi(&w);
 
-    // ip del servidor
-    char *serverIP = argv[2];
-
-    // puerto del servidor
-    int serverPort = atoi(argv[3]);
 
     TCPSocket tcpSocket([](int errorCode, std::string errorMessage)
                         { std::cout << "Socket creation error:" << errorCode << " : " << errorMessage << std::endl; });
 
     tcpSocket.onMessageReceived = [&](std::string message)
     {
-        onClientMessageReceived(message, tcpSocket);
+        onClientMessageReceived(message, tcpSocket, ui);
     };
 
-    tcpSocket.onSocketClosed = [](int errorCode)
+    tcpSocket.onSocketClosed = [&](int errorCode)
     {
         std::cout << "\n\nConnection closed: " << errorCode << std::endl;
-        exit(0);
+        ui.pages->setCurrentIndex(0);
     };
 
-    tcpSocket.Connect(
+    QObject::connect(ui.btnEntrar, &QPushButton::clicked, &w, [&](){
+        std::string userName =  ui.txtUserChat->text().toStdString();
+        std::string serverIP =  ui.txtIpChat->text().toStdString();
+        std::string serverPortString =  ui.txtPortChat->text().toStdString();
+       
+
+        if (userName.empty() || serverIP.empty() || serverPortString.empty()){
+            QMessageBox::information(nullptr, "Error", "Debe llenar todos los campos");
+            return;
+        }
+
+         int serverPort = std::stoi(serverPortString);
+
+        tcpSocket.Connect(
         serverIP, serverPort, [&]
         {
-        json body;
-        body["user_id"] = std::string(userName);
-        body["connect_time"] = std::to_string(time(NULL));
 
-        json connection;
-        connection["request"] = "INIT_CONEX";
-        connection["body"] = body;
+            json body;
+            body["user_id"] = std::string(userName);
+            body["connect_time"] = std::to_string(time(NULL));
 
-        // Send String:
-        tcpSocket.Send(json2string(connection)); },
+            json connection;
+            connection["request"] = "INIT_CONEX";
+            connection["body"] = body;
+
+            // Send String:
+            tcpSocket.Send(json2string(connection)); },
         [](int errorCode, std::string errorMessage)
         {
             printf("Error: %s\n", errorMessage.c_str());
         });
 
-    bool running = true;
+      
+    });
 
-    while (running)
-    {
+    QObject::connect(ui.btnCerrarSesion, &QPushButton::clicked, &w, [&](){
+        json connection;
+        connection["request"] = "END_CONEX";
+        tcpSocket.Send(json2string(connection));
+    });
 
-        int option = menuOptions();
 
-        if (option == 2)
-        {
+    w.show();
 
-            // message with userName
-            json request_chats;
-            request_chats["request"] = "GET_CHAT";
-            request_chats["body"] = "all";
-            tcpSocket.Send(json2string(request_chats));
-        }
-        else if (option == 7)
-        {
-            json request;
-            request["request"] = "END_CONEX";
-            tcpSocket.Send(json2string(request));
-        }
-    }
+    // tcpSocket.Close();
 
-    tcpSocket.Close();
-
-    return 0;
+    return a.exec();
 }
