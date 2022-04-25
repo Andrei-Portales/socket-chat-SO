@@ -58,14 +58,18 @@ public:
     QVBoxLayout *verticalLayout_4;
     QHBoxLayout *horizontalLayout_7;
     QPushButton *btnCerrarSesion;
+    QPushButton *btnRefrescar;
+    QPushButton *btnEstado;
+    QPushButton *btnAyuda;
     QSpacerItem *horizontalSpacer_3;
+    QLabel *label_username;
     QHBoxLayout *horizontalLayout_6;
-    QListWidget *listWidget;
+    QListWidget *usersListWidget;
     QVBoxLayout *verticalLayout_3;
-    QListWidget *listWidget_2;
+    QListWidget *messagesListWidget;
     QHBoxLayout *horizontalLayout_5;
-    QLineEdit *lineEdit;
-    QPushButton *pushButton;
+    QLineEdit *txtMessage;
+    QPushButton *btnSendMessage;
     QStatusBar *statusbar;
 
     void setupUi(QMainWindow *ChatWindow)
@@ -202,45 +206,68 @@ public:
 
         horizontalLayout_7->addWidget(btnCerrarSesion);
 
+        btnRefrescar = new QPushButton(chat);
+        btnRefrescar->setObjectName(QString::fromUtf8("btnRefrescar"));
+
+        horizontalLayout_7->addWidget(btnRefrescar);
+
+        btnEstado = new QPushButton(chat);
+        btnEstado->setObjectName(QString::fromUtf8("btnEstado"));
+
+        horizontalLayout_7->addWidget(btnEstado);
+
+        btnAyuda = new QPushButton(chat);
+        btnAyuda->setObjectName(QString::fromUtf8("btnAyuda"));
+
+        horizontalLayout_7->addWidget(btnAyuda);
+
         horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout_7->addItem(horizontalSpacer_3);
+
+        label_username = new QLabel(chat);
+        label_username->setObjectName(QString::fromUtf8("label_username"));
+
+        horizontalLayout_7->addWidget(label_username);
 
 
         verticalLayout_4->addLayout(horizontalLayout_7);
 
         horizontalLayout_6 = new QHBoxLayout();
         horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
-        listWidget = new QListWidget(chat);
-        listWidget->setObjectName(QString::fromUtf8("listWidget"));
+        usersListWidget = new QListWidget(chat);
+        usersListWidget->setObjectName(QString::fromUtf8("usersListWidget"));
         QSizePolicy sizePolicy2(QSizePolicy::Fixed, QSizePolicy::Expanding);
         sizePolicy2.setHorizontalStretch(0);
         sizePolicy2.setVerticalStretch(0);
-        sizePolicy2.setHeightForWidth(listWidget->sizePolicy().hasHeightForWidth());
-        listWidget->setSizePolicy(sizePolicy2);
-        listWidget->setMinimumSize(QSize(225, 0));
-        listWidget->setMaximumSize(QSize(225, 16777215));
+        sizePolicy2.setHeightForWidth(usersListWidget->sizePolicy().hasHeightForWidth());
+        usersListWidget->setSizePolicy(sizePolicy2);
+        usersListWidget->setMinimumSize(QSize(225, 0));
+        usersListWidget->setMaximumSize(QSize(225, 16777215));
 
-        horizontalLayout_6->addWidget(listWidget);
+        horizontalLayout_6->addWidget(usersListWidget);
 
         verticalLayout_3 = new QVBoxLayout();
         verticalLayout_3->setObjectName(QString::fromUtf8("verticalLayout_3"));
-        listWidget_2 = new QListWidget(chat);
-        listWidget_2->setObjectName(QString::fromUtf8("listWidget_2"));
+        messagesListWidget = new QListWidget(chat);
+        messagesListWidget->setObjectName(QString::fromUtf8("messagesListWidget"));
+        messagesListWidget->setStyleSheet(QString::fromUtf8(""));
+        messagesListWidget->setProperty("isWrapping", QVariant(false));
+        messagesListWidget->setWordWrap(true);
 
-        verticalLayout_3->addWidget(listWidget_2);
+        verticalLayout_3->addWidget(messagesListWidget);
 
         horizontalLayout_5 = new QHBoxLayout();
         horizontalLayout_5->setObjectName(QString::fromUtf8("horizontalLayout_5"));
-        lineEdit = new QLineEdit(chat);
-        lineEdit->setObjectName(QString::fromUtf8("lineEdit"));
+        txtMessage = new QLineEdit(chat);
+        txtMessage->setObjectName(QString::fromUtf8("txtMessage"));
 
-        horizontalLayout_5->addWidget(lineEdit);
+        horizontalLayout_5->addWidget(txtMessage);
 
-        pushButton = new QPushButton(chat);
-        pushButton->setObjectName(QString::fromUtf8("pushButton"));
+        btnSendMessage = new QPushButton(chat);
+        btnSendMessage->setObjectName(QString::fromUtf8("btnSendMessage"));
 
-        horizontalLayout_5->addWidget(pushButton);
+        horizontalLayout_5->addWidget(btnSendMessage);
 
 
         verticalLayout_3->addLayout(horizontalLayout_5);
@@ -279,7 +306,11 @@ public:
         label_3->setText(QApplication::translate("ChatWindow", "Puerto del servidor", nullptr));
         btnEntrar->setText(QApplication::translate("ChatWindow", "Entrar", nullptr));
         btnCerrarSesion->setText(QApplication::translate("ChatWindow", "Cerrar sesion", nullptr));
-        pushButton->setText(QApplication::translate("ChatWindow", "Enviar", nullptr));
+        btnRefrescar->setText(QApplication::translate("ChatWindow", "Refrescar", nullptr));
+        btnEstado->setText(QApplication::translate("ChatWindow", "Activo", nullptr));
+        btnAyuda->setText(QApplication::translate("ChatWindow", "Ayuda", nullptr));
+        label_username->setText(QApplication::translate("ChatWindow", "Usuario", nullptr));
+        btnSendMessage->setText(QApplication::translate("ChatWindow", "Enviar", nullptr));
     } // retranslateUi
 
 };

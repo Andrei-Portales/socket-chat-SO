@@ -216,6 +216,27 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="btnRefrescar">
+              <property name="text">
+               <string>Refrescar</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnEstado">
+              <property name="text">
+               <string>Activo</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnAyuda">
+              <property name="text">
+               <string>Ayuda</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="horizontalSpacer_3">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
@@ -227,6 +248,13 @@
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_username">
+              <property name="text">
+               <string>Usuario</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -257,15 +285,25 @@
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_3">
               <item>
-               <widget class="QListWidget" name="messagesListWidget"/>
+               <widget class="QListWidget" name="messagesListWidget">
+                <property name="styleSheet">
+                 <string notr="true"/>
+                </property>
+                <property name="isWrapping" stdset="0">
+                 <bool>false</bool>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
               </item>
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_5">
                 <item>
-                 <widget class="QLineEdit" name="lineEdit"/>
+                 <widget class="QLineEdit" name="txtMessage"/>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton">
+                 <widget class="QPushButton" name="btnSendMessage">
                   <property name="text">
                    <string>Enviar</string>
                   </property>

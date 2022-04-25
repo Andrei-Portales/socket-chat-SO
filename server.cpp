@@ -95,7 +95,7 @@ void emitBroadcast(json data)
         TCPSocket *socket = conections[i].socket;
 
         if (socket != NULL)
-        {   
+        {
             socket->Send(json2string(data));
         }
     }
@@ -196,61 +196,82 @@ void onClientMessageReceived(std::string message, TCPSocket *newClient)
             {
                 if (body == "all")
                 {
-                    json response = get_users_connected(conections);
-                    newClient->Send(json2string(response));
+                    json users_string = get_users_connected(conections);
+                    newClient->Send(json2string(users_string));
                 }
                 else
                 {
                     std::string userName = body;
 
                     std::string ip = "";
+                    int status = -1;
 
                     for (int i = 0; i < MAX_CONNECTIONS; i++)
                     {
-                        if (conections[i].userName == userName)
+                        if (conections[i].socket != NULL && conections[i].userName == userName)
                         {
                             ip = conections[i].socket->remoteAddress();
+                            status = conections[i].status;
                         }
                     }
 
                     json response;
                     response["response"] = "GET_USER";
 
-                    if (ip == "")
+                    if (ip == "" && status == -1)
                     {
                         response["code"] = 102;
                     }
                     else
                     {
                         response["code"] = 200;
-                        response["body"] = ip;
+                        json r = json::array();
+                        r.push_back(ip);
+                        r.push_back(status);
+                        response["body"] = r;
                     }
+                    newClient->Send(json2string(response));
                 }
             }
             else if (type == "PUT_STATUS")
             {
                 int status = body;
 
+                bool find = false;
+
                 for (int i = 0; i < MAX_CONNECTIONS; i++)
                 {
-                    if (conections[i].socket->remoteAddress() == newClient->remoteAddress() && conections[i].socket->remotePort() == newClient->remotePort())
+
+                    if (conections[i].socket != NULL)
                     {
-                        conections[i].status = status;
+                        if (conections[i].socket->remoteAddress() == newClient->remoteAddress() && conections[i].socket->remotePort() == newClient->remotePort())
+                        {
+                            conections[i].status = status;
 
-                        json response;
-                        response["response"] = "PUT_STATUS";
-                        response["code"] = 200;
+                            json response;
+                            response["response"] = "PUT_STATUS";
+                            response["code"] = 200;
 
-                        newClient->Send(json2string(response));
-                        break;
+                            newClient->Send(json2string(response));
+                            find = true;
+
+                            std::cout << "PUT_STATUS: " << conections[i].socket->remoteAddress() << ":" << conections[i].socket->remotePort() << " -> " << conections[i].status << std::endl;
+                        }
                     }
                 }
 
-                json response;
-                response["response"] = "PUT_STATUS";
-                response["code"] = 104;
+                if (!find)
+                {
+                    json response;
+                    response["response"] = "PUT_STATUS";
+                    response["code"] = 104;
 
-                newClient->Send(json2string(response));
+                    newClient->Send(json2string(response));
+                }
+
+
+                json users_string = get_users_connected(conections);
+                emitBroadcast(users_string);
             }
         }
     }

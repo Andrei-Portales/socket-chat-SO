@@ -20,6 +20,11 @@ struct chat_message {
     std::string to;
 };
 
+struct user {
+    std::string userName;
+    int status;
+};
+
 std::string json2string(json j) {
     std::string s = j.dump();
     return s;

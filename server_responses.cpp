@@ -76,9 +76,13 @@ json get_users_connected(connection_info *conections)
 
     for (int i = 0; i < MAX_CONNECTIONS; i++)
     {
-        if (conections[i].status == 0 && conections[i].userName != "")
+        if (conections[i].status > -1 && conections[i].userName != "" && conections[i].socket != NULL)
         {
-            body.push_back(conections[i].userName);
+            json temp = json::array();
+            temp.push_back(conections[i].userName);
+            temp.push_back(conections[i].status);
+
+            body.push_back(temp);
         }
     }
 
@@ -86,6 +90,8 @@ json get_users_connected(connection_info *conections)
     response["response"] = "GET_USER";
     response["code"] = 200;
     response["body"] = body;
+
+    std:: cout << response.dump() << std::endl;
 
     return response;
 }
