@@ -80,7 +80,8 @@ json get_users_connected(connection_info *conections)
         {
             json temp = json::array();
             temp.push_back(conections[i].userName);
-            temp.push_back(conections[i].status);
+            std::string statusString = std::to_string(conections[i].status);
+            temp.push_back(statusString);
 
             body.push_back(temp);
         }

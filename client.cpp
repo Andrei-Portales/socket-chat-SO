@@ -162,8 +162,7 @@ void onClientMessageReceived(std::string message, TCPSocket socket, Ui::ChatWind
 
                                 user user_data;
                                 user_data.userName = user_json[0];
-                                user_data.status = user_json[1];
-
+                                user_data.status = atoi(user_json[1]);
                                 users.push_back(user_data);
                             }
 
@@ -192,7 +191,9 @@ void onClientMessageReceived(std::string message, TCPSocket socket, Ui::ChatWind
                                     else if (user_item.status == 2)
                                     {
                                         brush.setColor(QColor(255, 0, 0));
-                                    }else {
+                                    }
+                                    else
+                                    {
                                         brush.setColor(QColor(0, 0, 0));
                                     }
 
@@ -354,7 +355,8 @@ int main(int argc, char *argv[])
     menu->addAction(QString::fromStdString("Cambiar estado a inactivo"));
     menu->addAction(QString::fromStdString("Cambiar estado a ocupado"));
 
-    QObject::connect(menu, &QMenu::triggered, &w, [&](QAction *action) {
+    QObject::connect(menu, &QMenu::triggered, &w, [&](QAction *action)
+                     {
 
         int index = menu->actions().indexOf(action);
 
@@ -362,13 +364,13 @@ int main(int argc, char *argv[])
         request["request"] = "PUT_STATUS";
         request["body"] = index;
         newStatus = index;
-        tcpSocket.Send(json2string(request));
-    });
-        
+        tcpSocket.Send(json2string(request)); });
 
     ui.btnEstado->setMenu(menu);
 
-
+    QObject::connect(ui.btnAyuda, &QPushButton::clicked, &w, [&]() {
+        QMessageBox::information(nullptr, "Error", "No hay ayuda disponible");
+    });
 
     w.show();
 

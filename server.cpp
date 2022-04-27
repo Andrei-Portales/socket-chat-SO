@@ -227,7 +227,8 @@ void onClientMessageReceived(std::string message, TCPSocket *newClient)
                         response["code"] = 200;
                         json r = json::array();
                         r.push_back(ip);
-                        r.push_back(status);
+                        std::string statusString = std::to_string(status);
+                        r.push_back(statusString);
                         response["body"] = r;
                     }
                     newClient->Send(json2string(response));
@@ -331,16 +332,16 @@ int main(int argc, char *argv[])
 
     // Start Listening the server.
     tcpServer.Listen([](int errorCode, std::string errorMessage)
-                     {
-                         if (errorCode != 0)
-                         {
-                             printf("Error: %s\n", errorMessage.c_str());
-                             exit(1);
-                         }
-                         else
-                         {
-                             printf("Server listening.\n");
-                         } });
+    {
+        if (errorCode != 0)
+        {
+            printf("Error: %s\n", errorMessage.c_str());
+            exit(1);
+        }
+        else
+        {
+            printf("Server listening.\n");
+        } });
 
     std::string input;
     getline(std::cin, input);
