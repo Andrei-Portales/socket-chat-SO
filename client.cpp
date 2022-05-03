@@ -162,7 +162,9 @@ void onClientMessageReceived(std::string message, TCPSocket socket, Ui::ChatWind
 
                                 user user_data;
                                 user_data.userName = user_json[0];
-                                user_data.status = atoi(user_json[1]);
+                                std::string status_string = user_json[1];
+                                user_data.status = std::stoi(status_string);
+                                // user_data.status = atoi(user_json[1]);
                                 users.push_back(user_data);
                             }
 

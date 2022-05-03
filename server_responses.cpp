@@ -3,7 +3,7 @@
 
 #define MAX_CONNECTIONS 10
 
-json get_chats_all(std::list<chat_message> messages)
+json get_chats_all(std::list<chat_message> messages, TCPSocket *newClient)
 {
     int messages_size = messages.size();
     json bodyResp = json::array();
@@ -15,6 +15,10 @@ json get_chats_all(std::list<chat_message> messages)
         chat_message cur_message = *it;
 
         std::cout << typeid(cur_message.message).name() << std::endl;
+
+        // TODO: Implementar para que solo regrese mensajes de un usuario
+
+
 
         json message;
         message["message"] = cur_message.message;

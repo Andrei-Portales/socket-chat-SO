@@ -166,7 +166,7 @@ void onClientMessageReceived(std::string message, TCPSocket *newClient)
             {
                 if (body == "all")
                 {
-                    json response = get_chats_all(messages);
+                    json response = get_chats_all(messages, newClient);
                     newClient->Send(json2string(response));
                 }
                 else
