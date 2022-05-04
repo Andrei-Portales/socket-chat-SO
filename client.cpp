@@ -282,9 +282,9 @@ int main(int argc, char *argv[])
                              serverIP, serverPort, [&]
                              {
 
-            json body;
-            body["user_id"] = std::string(userName);
-            body["connect_time"] = std::to_string(time(NULL));
+            json body = json::array();
+            body.push_back(std::to_string(time(NULL)));
+            body.push_back(userName);
 
             json connection;
             connection["request"] = "INIT_CONEX";

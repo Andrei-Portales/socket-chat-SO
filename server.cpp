@@ -120,7 +120,7 @@ void onClientMessageReceived(std::string message, TCPSocket *newClient)
 
             if (type == "INIT_CONEX")
             {
-                std::string userName = body["user_id"];
+                std::string userName = body[1];
                 int rP = newClient->remotePort();
                 std::string remotePort = std::to_string(rP);
 
