@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
     ui.btnEstado->setMenu(menu);
 
     QObject::connect(ui.btnAyuda, &QPushButton::clicked, &w, [&]() {
-        QMessageBox::information(nullptr, "Error", "No hay ayuda disponible");
+        QMessageBox::information(nullptr, "Error", "Universidad del valle de Guatemala\n\n Integrantes:\nAndrei Portales 19825\nChistian Perez 19710\n");
     });
 
     w.show();
